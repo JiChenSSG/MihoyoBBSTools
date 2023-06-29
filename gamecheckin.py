@@ -50,7 +50,8 @@ class GameCheckin:
 
     # 判断签到
     def is_sign(self, region: str, uid: str) -> dict:
-        req = http.get(self.is_sign_api.format(self.act_id, region, uid), headers=self.headers)
+        req = http.get(self.is_sign_api.format(
+            self.act_id, region, uid), headers=self.headers)
         data = req.json()
         if data["retcode"] != 0:
             log.warning("获取账号签到信息失败！")
@@ -61,11 +62,12 @@ class GameCheckin:
         return data["data"]
 
     def check_in(self, account):
+        isValidate = False
         header = self.headers.copy()
         retries = 3
         for i in range(1, retries + 1):
-            if i > 1:
-                log.info(f'触发验证码，即将进行第 {i} 次重试，最多 3 次')
+            if i > 1 and not isValidate:
+                log.info(f'触发验证码并校验失败，即将进行第 {i} 次重试，最多 3 次')
             req = http.post(url=self.sign_api, headers=header,
                             json={'act_id': self.act_id, 'region': account[2], 'uid': account[1]})
             if req.status_code == 429:
@@ -74,13 +76,15 @@ class GameCheckin:
                 continue
             data = req.json()
             if data["retcode"] == 0 and data["data"]["success"] == 1 and i < retries:
-                validate = captcha.game_captcha(data["data"]["gt"], data["data"]["challenge"])
+                validate = captcha.game_captcha(
+                    data["data"]["gt"], data["data"]["challenge"], self.headers.copy())
                 if validate:
                     header.update({
                         "x-rpc-challenge": data["data"]["challenge"],
                         "x-rpc-validate": validate,
                         "x-rpc-seccode": f'{validate}|jordan'
                     })
+                    isValidate = True
                 time.sleep(random.randint(6, 15))
             else:
                 break
@@ -99,7 +103,8 @@ class GameCheckin:
             time.sleep(random.randint(2, 8))
             is_data = self.is_sign(region=account[2], uid=account[1])
             if is_data.get("first_bind", False):
-                log.warning(f"{self.player_name}{account[0]}是第一次绑定米游社，请先手动签到一次")
+                log.warning(
+                    f"{self.player_name}{account[0]}是第一次绑定米游社，请先手动签到一次")
             else:
                 sign_days = is_data["total_sign_day"] - 1
                 if is_data["is_sign"]:
