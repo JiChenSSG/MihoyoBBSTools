@@ -4,14 +4,16 @@
 
 禁止大范围宣传本项目，谢谢配合
 
-也请不要滥用本项目(
+也请不要滥用本项目
+
+⚠️ **对于Fork的开发者/用户，请不要滥用GitHub Action，因为 GitHub 将计算您的分支 GitHub Actions 使用量并归属到上游存储库，这可能导致 GitHub 停用此上游存储库**
 
 本项目米游币部分参考[XiaoMiku01/miyoubiAuto](https://github.com/XiaoMiku01/miyoubiAuto)进行编写
 
 - 此项目的用途
 
   这是一个米游社的辅助签到项目，包含了米游币、崩坏学院2、崩坏3、原神、未定事件簿、崩坏:星穹铁道
-  已经支持米哈游国内正在运营的全部游戏的米游社签到(2022-4-26)
+  已经支持米哈游国内在运营的全部游戏的米游社签到，以及米游币自动获取
 
 ## 如何使用程序
 
@@ -29,7 +31,7 @@
 
   6. 请使用 vscode/notepad++等文本编辑器打开上一步复制好的配置文件
 
-  7. **使用[获取 Cookie](#获取米游社Cookie)里面的方法来获取米游社 Cookie**
+  7. **使用[获取 Cookie](#获取米游社-cookie)里面的方法来获取米游社 Cookie**
 
   8. 将复制的 Cookie 粘贴到`config.yaml`的`cookie:" "`中(在`account`里面)
 
@@ -110,6 +112,18 @@ var cookie=document.cookie;var ask=confirm('Cookie:'+cookie+'\n\nDo you want to 
 
 3. 替换配置文件中 `useragent` 的原始内容
 
+## 获取云原神的 token
+
+1. 建议使用打开浏览器的无痕/隐私/InPrivate模式
+
+2. 下载 [云原神网页版](https://ys.mihoyo.com/cloud/#/)
+
+3. 按下键盘上的`F12`或右键检查,打开开发者工具,在打开后登入账号
+
+4. 在filter里面输入`wallet/wallet/get`,选择`status`为`200`的记录
+
+5. 点击记录，往下拉，找到`X-Rpc-Combo_token`,复制对应的值,成功获取token
+
 ## 使用 Docker 运行
 
 Docker 的运行脚本基于 Linux 平台编写，暂未在 Win 平台测试。
@@ -139,6 +153,28 @@ docker-compose logs -f
 ```text
 docker-compose stop
 docker-compose pull && docker-compose up -d
+```
+
+## 使用 kubernetes 运行
+
+1. 填写拷贝一份配置文件至 kube 文件夹并进入
+
+```bash
+cp config/config.yaml.example kube/config.yaml
+cd kube
+```
+
+2. 创建 ConfigMap 并启动服务
+
+```bash
+kubectl create cm mihoyo-conf --from-file config.yaml
+kubectl apply -f deployment.yaml
+```
+
+3. 查看结果
+
+```bash
+kubectl logs $(kubectl get pod -l app=mihoyo -o jsonpath="{.items[0].metadata.name}") -f --tail 40
 ```
 
 ## 使用 python 运行(screen)
@@ -227,13 +263,13 @@ docker-compose pull && docker-compose up -d
 定时类型：crontab
 定时规则：2 2 28 * *
 白名单：ql_main.py
-依赖文件：error|mihoyo|genshin|honkai3rd|log|push|req|set|tools|con|acc|honkai2|tearsofthemis|captcha|main|gamecheckin|honkaisr|hoyo_checkin|hoyo_gs|hoyo_http|hoyo_sr
+依赖文件：error|mihoyo|genshin|honkai3rd|log|push|req|set|tools|con|acc|honkai2|tearsofthemis|captcha|main|gamecheckin|honkaisr|hoyo_checkin|hoyo_gs|hoyo_sr
 ```
 
 方式 2：指令拉取
 
 ```sh
-ql repo https://github.com/Womsxd/MihoyoBBSTools.git "ql_main.py" "" "error|mihoyo|genshin|honkai3rd|log|push|req|set|tools|con|acc|honkai2|tearsofthemis|captcha|main|gamecheckin|honkaisr|hoyo_checkin|hoyo_gs|hoyo_http|hoyo_sr"
+ql repo https://github.com/Womsxd/MihoyoBBSTools.git "ql_main.py" "" "error|mihoyo|genshin|honkai3rd|log|push|req|set|tools|con|acc|honkai2|tearsofthemis|captcha|main|gamecheckin|honkaisr|hoyo_checkin|hoyo_gs|hoyo_sr"
 ```
 
 ### 2.环境变量添加
@@ -244,6 +280,7 @@ ql repo https://github.com/Womsxd/MihoyoBBSTools.git "ql_main.py" "" "error|miho
 | --- | --- | --- |
 | AutoMihoyoBBS_config_path | /ql/data/config/ | 设置配置文件路径（必选） |
 | AutoMihoyoBBS_config_multi | 1 | 开启多用户（可选） |
+| AutoMihoyoBBS_config_prefix | mhy_ | 自定义文件开头(单用户可选，多用户推荐) |
 
 **注意！仅多用户需添加变量```AutoMihoyoBBS_config_multi```**
 
@@ -258,6 +295,7 @@ cp /ql/data/repo/Womsxd_MihoyoBBSTools/config/config.yaml.example /ql/data/confi
 ```
 
 多用户需要注意，配置文件的名字必须以```mhy_```开头，之后的```[config*]```可以为任意字符
+或通过环境变量```AutoMihoyoBBS_config_prefix```来自定义开头，如果不配置则默认```mhy_```开头
 
 ```sh
 cp /ql/data/repo/Womsxd_MihoyoBBSTools/config/config.yaml.example /ql/data/config/mhy_[config1].yaml

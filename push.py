@@ -29,7 +29,7 @@ def title(status):
     elif status == 2:
         return "「米游社脚本」部分账号执行失败！"
     elif status == 3:
-        return "「米游社脚本」原神签到触发验证码！"
+        return "「米游社脚本」游戏道具签到触发验证码！"
 
 
 # telegram的推送
@@ -83,6 +83,7 @@ def smtp(send_title, push_message):
     import smtplib
     from email.mime.text import MIMEText
     
+
     IMAGE_API = "https://api.dreamofice.cn/hoyorandom/img?type=json"
     
     try:
@@ -237,29 +238,41 @@ def webhook(send_title, push_message):
     ).json()
     log.info(f"推送结果：{rep.get('errmsg')}")
 
+# qmsg
+def qmsg(send_title, push_message):
+    rep = http.post(
+        url=f'https://qmsg.zendee.cn/send/{cfg.get("qmsg", "key")}',
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={
+            "msg":send_title+"\n"+push_message
+        }
+    ).json()
+    log.info(f"推送结果：{rep['reason']}")
+
 def push(status, push_message):
     if not load_config():
         return 0
     if cfg.getboolean('setting', 'enable'):
         log.info("正在执行推送......")
-        func_name = cfg.get('setting', 'push_server').lower()
-        func = globals().get(func_name)
-        # print(func)
-        if not func:
-            log.warning("推送服务名称错误：请检查config/push.ini -> [setting] -> push_server")
-            return 0
-        log.debug(f"推送所用的服务为：{func_name}")
-        try:
-            if not config.update_config_need:
-                func(title(status), push_message)
+        func_names = cfg.get('setting', 'push_server').lower()
+        for func_name in func_names.split(","):
+            func = globals().get(func_name)
+            # print(func)
+            if not func:
+                log.warning("推送服务名称错误：请检查config/push.ini -> [setting] -> push_server")
+                return 0
+            log.debug(f"推送所用的服务为：{func_name}")
+            try:
+                if not config.update_config_need:
+                    func(title(status), push_message)
+                else:
+                    func('「米游社脚本」config可能需要手动更新',
+                        f'如果您多次收到此消息开头的推送，证明您运行的环境无法自动更新config，请手动更新一下，谢谢\r\n{title(status)}\r\n{push_message}')
+            except Exception as r:
+                log.warning(f"推送执行错误：{str(r)}")
+                return 0
             else:
-                func('「米游社脚本」config可能需要手动更新',
-                     f'如果您多次收到此消息开头的推送，证明您运行的环境无法自动更新config，请手动更新一下，谢谢\r\n{title(status)}\r\n{push_message}')
-        except Exception as r:
-            log.warning(f"推送执行错误：{str(r)}")
-            return 0
-        else:
-            log.info("推送完毕......")
+                log.info(f"{func_name} - 推送完毕......")
     return 1
 
 
