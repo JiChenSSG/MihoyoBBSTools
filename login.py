@@ -1,9 +1,10 @@
 import re
+
 import config
 import setting
-from request import http
-from loghelper import log
 from error import CookieError
+from loghelper import log
+from request import http
 
 headers = setting.headers.copy()
 headers.pop("DS")
@@ -12,24 +13,28 @@ headers.pop("Referer")
 
 
 def login():
-    if config.config["account"]["cookie"] == '':
+    if not config.config["account"]["cookie"]:
         log.error("请填入Cookies!")
         config.clear_cookies()
         raise CookieError('No cookie')
-    # 判断Cookie里面是否有login_ticket 没有的话直接退了
-    login_ticket = get_login_ticket()
-    if login_ticket is None:
-        log.error("cookie中没有'login_ticket'字段,请重新登录米游社，重新抓取cookie!")
-        config.clear_cookies()
-        raise CookieError('Cookie lost login_ticket')
-    config.config["account"]["login_ticket"] = login_ticket
+    if config.config['account']['stoken'] == "":
+        log.error("无Stoken 请手动填入stoken!")
+        raise CookieError('no stoken')
+    # # 判断Cookie里面是否有login_ticket 没有的话直接退了
+    # login_ticket = get_login_ticket()
+    # if login_ticket is None:
+    #     log.error("cookie中没有'login_ticket'字段,请重新登录米游社，重新抓取cookie!")
+    #     config.clear_cookies()
+    #     raise CookieError('Cookie lost login_ticket')
     uid = get_uid()
     if uid is None:
         log.error("cookie已失效,请重新登录米游社抓取cookie")
         config.clear_cookies()
         raise CookieError('Cookie expires')
     config.config["account"]["stuid"] = uid
-    config.config["account"]["stoken"] = get_stoken(login_ticket, uid)
+    # config.config["account"]["stoken"] = get_stoken(login_ticket, uid)
+    if require_mid():
+        config.config["account"]["mid"] = get_mid()
     log.info("登录成功！")
     log.info("正在保存Config！")
     config.save_config()
@@ -38,6 +43,11 @@ def login():
 def get_login_ticket() -> str:
     ticket_match = re.search(r'login_ticket=(.*?)(?:;|$)', config.config["account"]["cookie"])
     return ticket_match.group(1) if ticket_match else None
+
+
+def get_mid() -> str:
+    mid = re.search(r'(account_mid_v2|ltmid_v2|mid)=(.*?)(?:;|$)', config.config["account"]["cookie"])
+    return mid.group(2) if mid else None
 
 
 def get_uid() -> str:
@@ -93,3 +103,30 @@ def update_cookie_token() -> bool:
         config.save_config()
         return True
     return False
+
+
+def require_mid() -> bool:
+    """
+    判断是否需要mid
+
+    :return: 是否需要mid
+    """
+    if config.config["account"]["stoken"].startswith("v2_"):
+        return True
+    return False
+
+
+def get_stoken_cookie() -> str:
+    """
+    获取带stoken的cookie
+
+    :return: 正确的stoken的cookie
+    """
+    cookie = f"stuid={config.config['account']['stuid']};stoken={config.config['account']['stoken']}"
+    if require_mid():
+        if config.config['account']['mid']: 
+            cookie += f";mid={config.config['account']['mid']}"
+        else:
+            log.error(f"v2_stoken需要mid参数")
+            raise CookieError(f"cookie require @mid parament")
+    return cookie
