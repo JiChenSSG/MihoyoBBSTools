@@ -89,7 +89,7 @@ def smtp(send_title, push_message):
     IMAGE_API = "https://api.iw233.cn/api.php?sort=random&type=json"
 
     try:
-        image_url = http.get(IMAGE_API).json()["pic"][0]
+        image_url = http.post(IMAGE_API).json()["url"]
     except:
         image_url = "unable to get the image"
         log.warning("获取随机背景图失败，请检查图片api")
@@ -99,7 +99,7 @@ def smtp(send_title, push_message):
     message = MIMEText(message, "html", "utf-8")
     message['Subject'] = cfg["smtp"]["subject"]
     message['To'] = cfg["smtp"]["toaddr"]
-    message['From'] = f"{cfg['smtp']['subject']}<{cfg['smtp']['fromaddr']}>"
+    message['From'] = f"{cfg['smtp']['subject']} <{cfg['smtp']['fromaddr']}>"
     if cfg.getboolean("smtp", "ssl_enable"):
         server = smtplib.SMTP_SSL(cfg["smtp"]["mailhost"], cfg.getint("smtp", "port"))
     else:

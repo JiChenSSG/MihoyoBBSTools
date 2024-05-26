@@ -92,6 +92,7 @@ class GameCheckin:
         return data["data"]
 
     def check_in(self, account):
+        isValidate = False
         header = self.headers.copy()
         retries = config.config['games']['cn'].get('retries', 3)
         for i in range(1, retries + 1):
@@ -99,19 +100,22 @@ class GameCheckin:
                 log.info(f'触发验证码，即将进行第 {i} 次重试，最多 {retries} 次')
             req = self.http.post(url=self.sign_api, headers=header,
                                  json={'act_id': self.act_id, 'region': account[2], 'uid': account[1]})
+
             if req.status_code == 429:
                 time.sleep(10)  # 429同ip请求次数过多，尝试sleep10s进行解决
                 log.warning('429 Too Many Requests ，即将进入下一次请求')
                 continue
             data = req.json()
             if data["retcode"] == 0 and data["data"]["success"] == 1 and i < retries:
-                validate = captcha.game_captcha(data["data"]["gt"], data["data"]["challenge"])
+                validate = captcha.game_captcha(
+                    data["data"]["gt"], data["data"]["challenge"], self.headers.copy())
                 if validate:
                     header.update({
                         "x-rpc-challenge": data["data"]["challenge"],
                         "x-rpc-validate": validate,
                         "x-rpc-seccode": f'{validate}|jordan'
                     })
+                    isValidate = True
                 time.sleep(random.randint(6, 15))
             else:
                 break
