@@ -92,7 +92,6 @@ class GameCheckin:
         return data["data"]
 
     def check_in(self, account):
-        isValidate = False
         header = self.headers.copy()
         retries = config.config['games']['cn'].get('retries', 3)
         for i in range(1, retries + 1):
@@ -115,7 +114,6 @@ class GameCheckin:
                         "x-rpc-validate": validate,
                         "x-rpc-seccode": f'{validate}|jordan'
                     })
-                    isValidate = True
                 time.sleep(random.randint(6, 15))
             else:
                 break

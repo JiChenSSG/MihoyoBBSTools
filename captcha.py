@@ -3,6 +3,7 @@ import setting
 import json
 from loghelper import log
 import yaml
+from twocaptcha import TwoCaptcha
 
 
 def game_captcha(gt: str, challenge: str, header: dict):
@@ -21,27 +22,27 @@ def read_appkey():
 
 def ocr(gt: str, challenge: str):
     appkey = read_appkey()
+    
+    solver = TwoCaptcha(appkey)
+    
     log.info("验证码识别中....")
+
     try:
-        req = http.post(url='http://api.ttocr.com/api/recognize', headers=setting.headers, data={
-            'appkey': appkey,
-            'gt': gt,
-            'challenge': challenge,
-            'referer': setting.bbs_captcha_verify,
-            'itemid': 388
-        })
+        req = solver.geetest(
+                gt=gt,
+                apiServer='api.geetest.com',
+                challenge=challenge,
+                url=setting.bbs_captcha_verify
+            )
     except Exception as e:
         log.warning("验证码识别异常: " + str(e))
         return None
-
-    if req.status_code == 200:
-        data = json.loads(req.text)
-        if data['status'] != 1:
-            log.info("识别失败")
-            return None
-
-        log.info("识别成功")
-        return data['resultid']
-    else:
+    
+    if req.get('code') is None:
         log.info("识别失败")
-        return None  # 失败返回None 成功返回validate
+        return None
+    
+    req = json.loads(req.get('code'))
+    
+    log.info("识别成功")
+    return req.get('geetest_validate')
