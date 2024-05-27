@@ -1,0 +1,6 @@
+.conda/*
+__pycache__/*
+.vscode/*
+.git/*
+package.sh
+package_exclude.lst
