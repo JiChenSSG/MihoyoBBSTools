@@ -15,7 +15,7 @@ def bbs_captcha(gt: str, challenge: str):
 
 
 def read_appkey():
-    with open('./config/ocr.yaml') as file:
+    with open('./config/ocr/config.yaml') as file:
         data = yaml.safe_load(file)
         return data['appkey']
 
