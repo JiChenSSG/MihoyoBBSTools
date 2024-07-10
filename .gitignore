@@ -1,5 +1,5 @@
 conda
-config/ocr/**
+config/ocr/config.yaml
 package.zip
 
 # Byte-compiled / optimized / DLL files
